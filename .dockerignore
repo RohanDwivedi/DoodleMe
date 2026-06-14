@@ -1,0 +1,38 @@
+# Version control
+.git/
+.github/
+
+# Python artefacts
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.egg-info/
+**/.eggs/
+**/dist/
+**/build/
+
+# ROS2 build artefacts (never copy into image)
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# Generated design outputs (mounted as volumes at runtime)
+ros2_ws/src/doodle_description/urdf/*.urdf
+ros2_ws/src/doodle_description/meshes/*.stl
+
+# Dev / editor
+.vscode/
+.idea/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.pytest_cache/
+
+# Docker files themselves (avoid recursive context)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Secrets — never bake into the image
+.env
+**/*.pem
+**/*.key
