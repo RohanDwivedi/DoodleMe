@@ -1,0 +1,69 @@
+services:
+  doodle:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: doodleme:latest
+    container_name: doodle
+
+    environment:
+      # ── Display ─────────────────────────────────────────────────────────────
+      # Picks up DISPLAY from the host shell (e.g. :0 or :1).
+      # Run `xhost +local:docker` on the host before starting.
+      - DISPLAY=${DISPLAY:-:0}
+
+      # ── Anthropic API key ────────────────────────────────────────────────────
+      # Set in .env file or export in your shell.
+      # Can also be entered through the Settings dialog inside the app.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+
+      # ── Qt / OpenGL ──────────────────────────────────────────────────────────
+      - QT_X11_NO_MITSHM=1
+      - QT_API=pyqt5
+      # Uncomment if you have no GPU or see OpenGL errors:
+      # - LIBGL_ALWAYS_SOFTWARE=1
+
+      # ── ROS2 ────────────────────────────────────────────────────────────────
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+
+    volumes:
+      # X11 socket — required for the GUI window
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+      # Persistent settings and API key
+      - doodle_config:/root/.config/rqt_doodle
+
+      # Generated design files: URDF, STL, .scad, BOM, wiring, KiCad
+      - doodle_workspace:/root/doodle_workspace
+
+      # Session history and crash-recovery files
+      - doodle_sessions:/root/.local/share/rqt_doodle
+
+    # Host networking is required for ROS2 DDS multicast discovery.
+    # This also means the container shares the host's ROS2 graph,
+    # so RViz2 and robot_state_publisher are visible from outside.
+    network_mode: host
+
+    # GPU passthrough for hardware-accelerated OpenGL (pyvistaqt 3-D viewer).
+    # Remove the `devices` block if your host has no /dev/dri.
+    devices:
+      - /dev/dri:/dev/dri
+
+    # Disable SELinux/AppArmor label confinement so X11 socket access works.
+    security_opt:
+      - label:disable
+
+    # Keep stdin open so Ctrl-C works cleanly.
+    stdin_open: true
+    tty: true
+
+    restart: unless-stopped
+
+# Named volumes — data persists across `docker compose down` and rebuilds.
+volumes:
+  doodle_config:
+    driver: local
+  doodle_workspace:
+    driver: local
+  doodle_sessions:
+    driver: local
