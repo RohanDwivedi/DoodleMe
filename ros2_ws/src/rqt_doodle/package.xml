@@ -11,7 +11,8 @@
   <maintainer email="myemail.rohan@gmail.com">Rohan</maintainer>
   <license>MIT</license>
 
-  <buildtool_depend>ament_python</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>rqt_gui</depend>
   <depend>rqt_gui_py</depend>
