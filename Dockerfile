@@ -57,7 +57,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # ── Layer 2: Python packages ──────────────────────────────────────────────────
 # Installed before copying source so this layer is cached on code changes.
-RUN pip3 install --no-cache-dir \
+RUN pip3 install --no-cache-dir --break-system-packages \
     "anthropic>=0.28" \
     pyvistaqt \
     pyvista \
