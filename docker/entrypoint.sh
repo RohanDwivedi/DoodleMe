@@ -33,4 +33,4 @@ mkdir -p /root/.local/share/rqt_doodle/sessions
 mkdir -p /root/.config/rqt_doodle
 
 echo "[doodle] Launching DoodleMe …"
-exec rqt --standalone rqt_doodle "$@"
+exec rqt --standalone DoodleMe --force-discover "$@"
