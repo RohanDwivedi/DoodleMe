@@ -86,7 +86,7 @@ RUN /bin/bash -c "\
     source /opt/ros/jazzy/setup.bash && \
     colcon build \
         --symlink-install \
-        --packages-select doodle_msgs doodle_description && \
+        --packages-select doodle_msgs doodle_description doodle_agent && \
     source /ros2_ws/install/setup.bash && \
     colcon build \
         --symlink-install \
