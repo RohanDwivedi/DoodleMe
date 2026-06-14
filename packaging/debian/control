@@ -1,0 +1,37 @@
+Source: rqt-doodle
+Section: misc
+Priority: optional
+Maintainer: Rohan <myemail.rohan@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+               python3-all,
+               python3-setuptools,
+               ros-jazzy-ament-cmake,
+               ros-jazzy-rqt-gui,
+               ros-jazzy-rqt-gui-py,
+               ros-jazzy-python-qt-binding
+Standards-Version: 4.6.2
+Homepage: https://github.com/rohan/DoodleMe
+Rules-Requires-Root: no
+
+Package: rqt-doodle
+Architecture: all
+Depends: ${misc:Depends},
+         ${python3:Depends},
+         ros-jazzy-rqt,
+         ros-jazzy-rqt-gui,
+         ros-jazzy-rqt-gui-py,
+         ros-jazzy-python-qt-binding,
+         ros-jazzy-robot-state-publisher,
+         ros-jazzy-joint-state-publisher-gui,
+         ros-jazzy-rviz2,
+         python3-anthropic,
+         python3-yaml,
+         python3-lxml,
+         openscad
+Recommends: python3-pyvistaqt,
+            ros-jazzy-ros-gz-sim
+Description: DoodleMe — AI-assisted robot design rqt plugin
+ Conversational interface for designing 3D printed mechanical and
+ electronics robot assemblies. Powered by Claude LLM; generates
+ OpenSCAD, URDF, Bill of Materials, wiring diagrams, and KiCad
+ schematics with live RViz2 preview and Gazebo simulation support.

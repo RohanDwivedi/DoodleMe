@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+.env
+
+# ROS2 / colcon
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# Generated design outputs
+ros2_ws/src/doodle_description/urdf/*.urdf
+ros2_ws/src/doodle_description/meshes/*.stl
+ros2_ws/src/doodle_description/meshes/*.obj
+
+# Sessions & config
+~/.local/share/rqt_doodle/
+.sessions/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debian build artefacts
+packaging/debian/.debhelper/
+packaging/debian/rqt-doodle/
+packaging/debian/files
+packaging/debian/*.log
+packaging/debian/*.substvars
+packaging/debian/debhelper-build-stamp
+*.deb
+*.changes
+*.buildinfo

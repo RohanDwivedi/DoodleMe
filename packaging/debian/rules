@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+%:
+	dh $@ --with python3
+
+override_dh_auto_build:
+	cd ../ros2_ws && \
+	  . /opt/ros/jazzy/setup.sh && \
+	  colcon build --packages-select rqt_doodle doodle_agent doodle_msgs doodle_description
+
+override_dh_auto_install:
+	install -d debian/rqt-doodle/opt/ros/jazzy
+	cp -r ../ros2_ws/install/. debian/rqt-doodle/opt/ros/jazzy/

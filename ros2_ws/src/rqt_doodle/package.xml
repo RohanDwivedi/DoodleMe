@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rqt_doodle</name>
+  <version>0.1.0</version>
+  <description>
+    DoodleMe — AI-assisted robot design tool for 3D printed mechanical and
+    electronics assemblies. Integrates Claude LLM with ROS2, OpenSCAD, URDF,
+    Gazebo, and KiCad for iterative design and simulation.
+  </description>
+  <maintainer email="myemail.rohan@gmail.com">Rohan</maintainer>
+  <license>MIT</license>
+
+  <depend>rqt_gui</depend>
+  <depend>rqt_gui_py</depend>
+  <depend>python_qt_binding</depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>doodle_agent</depend>
+  <depend>doodle_msgs</depend>
+
+  <exec_depend>python3-anthropic</exec_depend>
+  <exec_depend>python3-pyvistaqt</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>python3-lxml</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_pep8</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
+  </export>
+</package>

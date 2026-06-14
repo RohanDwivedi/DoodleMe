@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>doodle_description</name>
+  <version>0.1.0</version>
+  <description>
+    Output package for DoodleMe — holds generated URDF, STL meshes, and launch
+    files for the current design. Contents are overwritten by the agent.
+  </description>
+  <maintainer email="myemail.rohan@gmail.com">Rohan</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+</package>

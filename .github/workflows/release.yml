@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-deb:
+    name: Build .deb package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ROS2 Jazzy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common curl
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+            -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) \
+            signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+            http://packages.ros.org/ros2/ubuntu noble main" \
+            | sudo tee /etc/apt/sources.list.d/ros2.list
+          sudo apt-get update
+          sudo apt-get install -y ros-jazzy-rqt ros-jazzy-rqt-gui-py \
+            python3-colcon-common-extensions debhelper devscripts
+
+      - name: Build .deb
+        run: |
+          cd packaging
+          dpkg-buildpackage -us -uc -b
+          mv ../rqt-doodle_*.deb ../rqt-doodle_${{ github.ref_name }}_amd64.deb
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: rqt-doodle_${{ github.ref_name }}_amd64.deb
+          generate_release_notes: true

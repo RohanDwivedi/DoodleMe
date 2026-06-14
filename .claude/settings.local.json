@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(snap install *)",
+      "Bash(pip3 show *)",
+      "Bash(python3 -c \"import git; print\\(git.__version__\\)\")",
+      "Bash(pip3 install *)",
+      "Bash(python3 -m pip install gitpython)",
+      "Read(//opt/conda/bin/**)",
+      "Read(//home/rohan/.local/bin/**)",
+      "Bash(PATH=\"/home/rohan/.local/bin:$PATH\" gh auth *)",
+      "Bash(PATH=\"/home/rohan/.local/bin:$PATH\" gh repo *)",
+      "Bash(python3 *)"
+    ]
+  }
+}

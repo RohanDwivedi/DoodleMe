@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[tool.black]
+line-length = 99
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 99
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = [
+    "N802",   # function names in Qt must match signal names (camelCase)
+    "N803",   # Qt parameter names are camelCase
+    "N806",   # Qt variables can be camelCase
+]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = [
+    "ros2_ws/src/rqt_doodle/test",
+    "ros2_ws/src/doodle_agent/test",
+]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+markers = [
+    "ros2: marks tests that require a running ROS2 environment",
+    "api: marks tests that require the Anthropic API",
+    "openscad: marks tests that require OpenSCAD to be installed",
+]

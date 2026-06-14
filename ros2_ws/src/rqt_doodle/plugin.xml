@@ -1,0 +1,22 @@
+<library path="rqt_doodle">
+  <class
+    name="DoodleMe"
+    type="rqt_doodle.plugin.DoodlePlugin"
+    base_class_type="rqt_gui_py::Plugin"
+  >
+    <description>
+      AI-assisted robot design tool. Describe your 3D printed mechanical and
+      electronics assembly in natural language — DoodleMe generates OpenSCAD,
+      URDF, BOM, wiring diagrams, and KiCad schematics with live RViz2 preview
+      and Gazebo simulation support.
+    </description>
+    <qtgui>
+      <group>
+        <label>Robot Tools</label>
+      </group>
+      <label>DoodleMe</label>
+      <icon type="theme">applications-engineering</icon>
+      <statustip>AI-assisted robot design with Claude LLM</statustip>
+    </qtgui>
+  </class>
+</library>

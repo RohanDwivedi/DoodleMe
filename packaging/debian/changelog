@@ -1,0 +1,13 @@
+rqt-doodle (0.1.0-1) noble; urgency=low
+
+  * Initial release.
+  * Claude-powered chat interface for robot design.
+  * OpenSCAD + URDF generation with live 3D preview.
+  * Bill of Materials panel with CSV export.
+  * Mermaid wiring diagram panel.
+  * KiCad schematic export.
+  * Gazebo Harmonic spawn integration.
+  * Session auto-save and crash recovery.
+  * Dark theme, SVG icons, per-service status bar.
+
+ -- Rohan <myemail.rohan@gmail.com>  Sat, 14 Jun 2026 00:00:00 +0000
