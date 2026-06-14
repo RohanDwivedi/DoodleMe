@@ -77,13 +77,11 @@ RUN /bin/bash -c "\
     source /opt/ros/jazzy/setup.bash && \
     colcon build \
         --symlink-install \
-        --packages-select doodle_msgs doodle_description \
-        --cmake-args -DCMAKE_BUILD_TYPE=Release && \
+        --packages-select doodle_msgs doodle_description && \
     source /ros2_ws/install/setup.bash && \
     colcon build \
         --symlink-install \
         --packages-select doodle_agent rqt_doodle \
-        --cmake-args -DCMAKE_BUILD_TYPE=Release \
     "
 
 # ── Runtime environment ───────────────────────────────────────────────────────
