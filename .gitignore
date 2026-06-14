@@ -1,8 +1,8 @@
 # Secrets — NEVER commit key files
-secrets/*.txt
-secrets/*.key
-secrets/*.pem
-secrets/*.json
+# Covers both the wizard-written file (anthropic_api_key, no extension)
+# and any manually-placed files with common secret extensions.
+secrets/*
+!secrets/.gitkeep
 
 # Python
 __pycache__/

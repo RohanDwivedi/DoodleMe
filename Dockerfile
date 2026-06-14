@@ -89,8 +89,13 @@ RUN mkdir -p \
     /root/.local/share/rqt_doodle/sessions \
     /root/doodle_workspace
 
-# ── Entrypoint ────────────────────────────────────────────────────────────────
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# ── Docker helper scripts ─────────────────────────────────────────────────────
+RUN mkdir -p /docker
+COPY docker/setup_wizard.py /docker/setup_wizard.py
+COPY docker/entrypoint.sh /docker/entrypoint.sh
+RUN chmod +x /docker/entrypoint.sh
+
+# Back-compat symlink so existing docs / scripts that reference /entrypoint.sh still work.
+RUN ln -s /docker/entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

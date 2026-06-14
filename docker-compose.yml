@@ -1,4 +1,38 @@
 services:
+
+  # ── Setup wizard ─────────────────────────────────────────────────────────────
+  # Runs once at startup. If no API key is found in ./secrets/anthropic_api_key
+  # it shows a GUI dialog to collect and save the key, then exits 0.
+  # The main `doodle` service waits for this to complete successfully.
+  #
+  # On subsequent runs the wizard detects the existing key and exits immediately.
+  setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: doodleme:latest
+    container_name: doodle_setup
+
+    entrypoint: ["python3", "/docker/setup_wizard.py"]
+
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      - QT_API=pyqt5
+
+    volumes:
+      # X11 socket — needed so the wizard dialog can open on the host display
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Secrets dir — read-write so the wizard can create the key file
+      - ./secrets:/secrets:rw
+
+    security_opt:
+      - label:disable
+
+    # Run once and exit — never auto-restart
+    restart: "no"
+
+  # ── Main application ──────────────────────────────────────────────────────────
   doodle:
     build:
       context: .
@@ -6,30 +40,32 @@ services:
     image: doodleme:latest
     container_name: doodle
 
-    # ── Secret ────────────────────────────────────────────────────────────────
-    # Mounted read-only at /run/secrets/anthropic_api_key inside the container.
-    # The key is NEVER passed as an environment variable or baked into the image.
-    secrets:
-      - anthropic_api_key
+    # Don't start until the setup wizard has exited successfully
+    depends_on:
+      setup:
+        condition: service_completed_successfully
 
     environment:
-      # ── Display ─────────────────────────────────────────────────────────────
-      # Picks up DISPLAY from the host shell (e.g. :0 or :1).
+      # ── Display ──────────────────────────────────────────────────────────────
       # Run `xhost +local:docker` on the host before starting.
       - DISPLAY=${DISPLAY:-:0}
 
-      # ── Qt / OpenGL ──────────────────────────────────────────────────────────
+      # ── Qt / OpenGL ───────────────────────────────────────────────────────────
       - QT_X11_NO_MITSHM=1
       - QT_API=pyqt5
       # Uncomment if you have no GPU or see OpenGL errors:
       # - LIBGL_ALWAYS_SOFTWARE=1
 
-      # ── ROS2 ────────────────────────────────────────────────────────────────
+      # ── ROS2 ─────────────────────────────────────────────────────────────────
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
 
     volumes:
       # X11 socket — required for the GUI window
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+      # API key — bind-mounted read-only so settings.py can read
+      # /run/secrets/anthropic_api_key  (written by the setup service above)
+      - ./secrets:/run/secrets:ro
 
       # Persistent settings (theme, paths, etc. — NOT the API key)
       - doodle_config:/root/.config/rqt_doodle
@@ -41,8 +77,7 @@ services:
       - doodle_sessions:/root/.local/share/rqt_doodle
 
     # Host networking is required for ROS2 DDS multicast discovery.
-    # This also means the container shares the host's ROS2 graph,
-    # so RViz2 and robot_state_publisher are visible from outside.
+    # This also makes RViz2 and robot_state_publisher visible from outside.
     network_mode: host
 
     # GPU passthrough for hardware-accelerated OpenGL (pyvistaqt 3-D viewer).
@@ -54,25 +89,13 @@ services:
     security_opt:
       - label:disable
 
-    # Keep stdin open so Ctrl-C works cleanly.
     stdin_open: true
     tty: true
 
     restart: unless-stopped
 
-# ── Secrets ───────────────────────────────────────────────────────────────────
-# Create this file before running:
-#   mkdir -m 700 secrets
-#   echo "sk-ant-YOUR_KEY_HERE" > secrets/anthropic_api_key.txt
-#   chmod 600 secrets/anthropic_api_key.txt
-#
-# The file is NEVER copied into the image (see .dockerignore).
-# It is mounted read-only at /run/secrets/anthropic_api_key at runtime.
-secrets:
-  anthropic_api_key:
-    file: ./secrets/anthropic_api_key.txt
-
-# Named volumes — data persists across `docker compose down` and rebuilds.
+# ── Named volumes ─────────────────────────────────────────────────────────────
+# Data persists across `docker compose down` and image rebuilds.
 volumes:
   doodle_config:
     driver: local
