@@ -1,14 +1,16 @@
 from setuptools import find_packages, setup
 
+package_name = "doodle_agent"
+
 setup(
-    name="doodle_agent",
+    name=package_name,
     version="0.1.0",
     packages=find_packages(exclude=["test"]),
-    install_requires=[
-        "anthropic>=0.28",
-        "pyyaml",
-        "lxml",
+    data_files=[
+        ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
+        (f"share/{package_name}", ["package.xml"]),
     ],
+    install_requires=["setuptools"],
     zip_safe=True,
     author="Rohan",
     author_email="myemail.rohan@gmail.com",

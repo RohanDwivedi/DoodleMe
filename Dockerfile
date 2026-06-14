@@ -51,6 +51,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon-x11-0 \
     # Fallback virtual framebuffer (when no host display available)
     xvfb \
+    # colcon build system + ROS2 package identification (ament_python handler)
+    python3-colcon-common-extensions \
+    python3-colcon-ros \
     # Utilities
     curl \
     && rm -rf /var/lib/apt/lists/*
