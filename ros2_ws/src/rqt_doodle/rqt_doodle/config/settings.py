@@ -11,6 +11,10 @@ import yaml
 
 _CONFIG_PATH = Path.home() / ".config" / "rqt_doodle" / "config.yaml"
 
+# Docker Compose mounts secrets here as read-only files owned by root.
+# The file contains only the raw key, no quotes or extra whitespace.
+_SECRET_PATH = Path("/run/secrets/anthropic_api_key")
+
 _DEFAULTS: dict[str, Any] = {
     "api_key": "",
     "model": "claude-sonnet-4-6",
@@ -42,9 +46,34 @@ class Settings:
         self._save()
 
     def api_key(self) -> str:
-        """Return API key from config or ANTHROPIC_API_KEY env var."""
-        env = os.environ.get("ANTHROPIC_API_KEY", "")
-        return env or self._data.get("api_key", "")
+        """Return API key using this priority order:
+
+        1. ANTHROPIC_API_KEY env var   — explicit override, highest priority
+        2. Docker secret file          — /run/secrets/anthropic_api_key (never in env/image)
+        3. Stored config               — entered via Settings dialog, saved to YAML
+        """
+        if env := os.environ.get("ANTHROPIC_API_KEY", ""):
+            return env
+        if _SECRET_PATH.exists():
+            try:
+                return _SECRET_PATH.read_text().strip()
+            except OSError:
+                pass
+        return self._data.get("api_key", "")
+
+    def api_key_source(self) -> str:
+        """Human-readable label describing where the active key came from."""
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            return "env var"
+        if _SECRET_PATH.exists():
+            try:
+                if _SECRET_PATH.read_text().strip():
+                    return "secrets file"
+            except OSError:
+                pass
+        if self._data.get("api_key"):
+            return "settings"
+        return "not set"
 
     def has_api_key(self) -> bool:
         return bool(self.api_key())
