@@ -60,17 +60,36 @@ class SettingsDialog(QDialog):
         form.setContentsMargins(12, 12, 12, 12)
         form.setSpacing(10)
 
+        source = self._settings.api_key_source()
+        source_colours = {
+            "secrets file": ("#4ec9b0", "Docker secret  ✓  (highest trust)"),
+            "env var":      ("#dcdcaa", "Environment variable"),
+            "settings":     ("#9cdcfe", "Saved in config file"),
+            "not set":      ("#f48771", "Not configured"),
+        }
+        colour, label = source_colours.get(source, ("#9d9d9d", source))
+        source_label = QLabel(f"Active source: <b>{label}</b>")
+        source_label.setStyleSheet(f"color: {colour};")
+        source_label.setWordWrap(True)
+        form.addRow(source_label)
+
         note = QLabel(
-            "Your API key is stored in <code>~/.config/rqt_doodle/config.yaml</code>.<br>"
-            "Alternatively, set the <code>ANTHROPIC_API_KEY</code> environment variable."
+            "Priority order: <code>ANTHROPIC_API_KEY</code> env var "
+            "→ <code>/run/secrets/anthropic_api_key</code> (Docker secret) "
+            "→ value saved below.<br>"
+            "The field below is ignored when a secret file or env var is present."
         )
         note.setWordWrap(True)
-        note.setOpenExternalLinks(True)
+        note.setStyleSheet("color: #6a6a6a; font-size: 11px;")
         form.addRow(note)
 
-        self._key_edit = QLineEdit(self._settings.api_key())
+        stored = self._settings.get("api_key", "")
+        self._key_edit = QLineEdit(stored)
         self._key_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self._key_edit.setPlaceholderText("sk-ant-…")
+        self._key_edit.setPlaceholderText("sk-ant-…  (only used if no secret file or env var)")
+        if source in ("secrets file", "env var"):
+            self._key_edit.setEnabled(False)
+            self._key_edit.setPlaceholderText(f"Managed by {label} — field disabled")
 
         key_row = QHBoxLayout()
         key_row.addWidget(self._key_edit)
