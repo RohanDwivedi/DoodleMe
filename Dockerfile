@@ -70,12 +70,19 @@ RUN pip3 install --no-cache-dir --break-system-packages \
 WORKDIR /ros2_ws
 COPY ros2_ws/src ./src
 
-# ── Layer 4: colcon build (only our 4 packages) ───────────────────────────────
+# ── Layer 4: colcon build ─────────────────────────────────────────────────────
+# Two-pass build so generated message Python modules exist before rqt_doodle
+# installs (avoids a race when all four packages build in parallel).
 RUN /bin/bash -c "\
     source /opt/ros/jazzy/setup.bash && \
     colcon build \
         --symlink-install \
-        --packages-select doodle_msgs doodle_description doodle_agent rqt_doodle \
+        --packages-select doodle_msgs doodle_description \
+        --cmake-args -DCMAKE_BUILD_TYPE=Release && \
+    source /ros2_ws/install/setup.bash && \
+    colcon build \
+        --symlink-install \
+        --packages-select doodle_agent rqt_doodle \
         --cmake-args -DCMAKE_BUILD_TYPE=Release \
     "
 
