@@ -6,16 +6,17 @@ services:
     image: doodleme:latest
     container_name: doodle
 
+    # ── Secret ────────────────────────────────────────────────────────────────
+    # Mounted read-only at /run/secrets/anthropic_api_key inside the container.
+    # The key is NEVER passed as an environment variable or baked into the image.
+    secrets:
+      - anthropic_api_key
+
     environment:
       # ── Display ─────────────────────────────────────────────────────────────
       # Picks up DISPLAY from the host shell (e.g. :0 or :1).
       # Run `xhost +local:docker` on the host before starting.
       - DISPLAY=${DISPLAY:-:0}
-
-      # ── Anthropic API key ────────────────────────────────────────────────────
-      # Set in .env file or export in your shell.
-      # Can also be entered through the Settings dialog inside the app.
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 
       # ── Qt / OpenGL ──────────────────────────────────────────────────────────
       - QT_X11_NO_MITSHM=1
@@ -30,7 +31,7 @@ services:
       # X11 socket — required for the GUI window
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
 
-      # Persistent settings and API key
+      # Persistent settings (theme, paths, etc. — NOT the API key)
       - doodle_config:/root/.config/rqt_doodle
 
       # Generated design files: URDF, STL, .scad, BOM, wiring, KiCad
@@ -58,6 +59,18 @@ services:
     tty: true
 
     restart: unless-stopped
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+# Create this file before running:
+#   mkdir -m 700 secrets
+#   echo "sk-ant-YOUR_KEY_HERE" > secrets/anthropic_api_key.txt
+#   chmod 600 secrets/anthropic_api_key.txt
+#
+# The file is NEVER copied into the image (see .dockerignore).
+# It is mounted read-only at /run/secrets/anthropic_api_key at runtime.
+secrets:
+  anthropic_api_key:
+    file: ./secrets/anthropic_api_key.txt
 
 # Named volumes — data persists across `docker compose down` and rebuilds.
 volumes:
