@@ -23,8 +23,9 @@ services:
     volumes:
       # X11 socket — needed so the wizard dialog can open on the host display
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      # Secrets dir — read-write so the wizard can create the key file
-      - ./secrets:/secrets:rw
+      # System secrets dir — read-write so the wizard can create the key file.
+      # Lives outside the project tree so it is never accidentally committed.
+      - /etc/doodleme/secrets:/secrets:rw
 
     security_opt:
       - label:disable
@@ -63,9 +64,10 @@ services:
       # X11 socket — required for the GUI window
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
 
-      # API key — bind-mounted read-only so settings.py can read
-      # /run/secrets/anthropic_api_key  (written by the setup service above)
-      - ./secrets:/run/secrets:ro
+      # API key — bind-mounted read-only from the system secrets directory.
+      # settings.py reads /run/secrets/anthropic_api_key; the key never
+      # passes through env vars, config files, or Docker image layers.
+      - /etc/doodleme/secrets:/run/secrets:ro
 
       # Persistent settings (theme, paths, etc. — NOT the API key)
       - doodle_config:/root/.config/rqt_doodle

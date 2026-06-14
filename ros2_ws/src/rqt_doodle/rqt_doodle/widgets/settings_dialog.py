@@ -1,32 +1,39 @@
-"""Settings dialog — first-run wizard and ongoing config editor."""
+"""Settings dialog — config editor.
+
+API KEY SECURITY
+----------------
+The key is NEVER entered, displayed, or saved through this dialog.
+The single authoritative copy lives at /etc/doodleme/secrets/anthropic_api_key
+(host), bind-mounted read-only at /run/secrets/anthropic_api_key in the container.
+
+To update the key:  docker compose run --rm setup
+"""
 
 from __future__ import annotations
 
 import threading
 
-from python_qt_binding.QtCore import Qt, pyqtSignal as Signal
+from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtWidgets import (
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFormLayout,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
     QTabWidget,
     QVBoxLayout,
     QWidget,
-    QFileDialog,
-    QCheckBox,
-    QHBoxLayout,
 )
 
 from ..config.settings import Settings
 
 
 class SettingsDialog(QDialog):
-    """Modal settings dialog with API, paths, and behaviour tabs."""
-
-    api_key_changed = Signal(str)
+    """Modal settings dialog with API status, paths, and behaviour tabs."""
 
     def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -57,57 +64,64 @@ class SettingsDialog(QDialog):
     def _build_api_tab(self) -> QWidget:
         w = QWidget()
         form = QFormLayout(w)
-        form.setContentsMargins(12, 12, 12, 12)
-        form.setSpacing(10)
+        form.setContentsMargins(12, 16, 12, 12)
+        form.setSpacing(14)
 
         source = self._settings.api_key_source()
-        source_colours = {
-            "secrets file": ("#4ec9b0", "Docker secret  ✓  (highest trust)"),
-            "env var":      ("#dcdcaa", "Environment variable"),
-            "settings":     ("#9cdcfe", "Saved in config file"),
-            "not set":      ("#f48771", "Not configured"),
-        }
-        colour, label = source_colours.get(source, ("#9d9d9d", source))
-        source_label = QLabel(f"Active source: <b>{label}</b>")
-        source_label.setStyleSheet(f"color: {colour};")
-        source_label.setWordWrap(True)
-        form.addRow(source_label)
 
-        note = QLabel(
-            "Priority order: <code>ANTHROPIC_API_KEY</code> env var "
-            "→ <code>/run/secrets/anthropic_api_key</code> (Docker secret) "
-            "→ value saved below.<br>"
-            "The field below is ignored when a secret file or env var is present."
+        # Status badge
+        if source == "secrets file":
+            colour, badge = "#4ec9b0", "✓  API key loaded from secrets file"
+        elif source == "env var":
+            colour, badge = "#dcdcaa", "⚠  API key loaded from environment variable"
+        else:
+            colour, badge = "#f48771", "✗  No API key found"
+
+        status = QLabel(f"<b>{badge}</b>")
+        status.setStyleSheet(f"color: {colour}; font-size: 13px;")
+        status.setWordWrap(True)
+        form.addRow(status)
+
+        # Where the key lives
+        path_note = QLabel(
+            "The key is stored <b>only</b> at:<br>"
+            "<code>/etc/doodleme/secrets/anthropic_api_key</code><br>"
+            "bind-mounted read-only at <code>/run/secrets/anthropic_api_key</code> "
+            "inside the container.<br><br>"
+            "The key is <b>never</b> saved in this config file, env vars, "
+            "or Docker images."
         )
-        note.setWordWrap(True)
-        note.setStyleSheet("color: #6a6a6a; font-size: 11px;")
-        form.addRow(note)
+        path_note.setWordWrap(True)
+        path_note.setTextFormat(Qt.TextFormat.RichText)
+        path_note.setStyleSheet("color: #cccccc; font-size: 12px; line-height: 1.5;")
+        form.addRow(path_note)
 
-        stored = self._settings.get("api_key", "")
-        self._key_edit = QLineEdit(stored)
-        self._key_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self._key_edit.setPlaceholderText("sk-ant-…  (only used if no secret file or env var)")
-        if source in ("secrets file", "env var"):
-            self._key_edit.setEnabled(False)
-            self._key_edit.setPlaceholderText(f"Managed by {label} — field disabled")
+        # How to update
+        update_note = QLabel(
+            "To set or update the key, run the setup wizard:<br>"
+            "<code>docker compose run --rm setup</code><br><br>"
+            "Or write directly (requires root):<br>"
+            "<code>sudo sh -c 'echo \"sk-ant-…\" "
+            "&gt; /etc/doodleme/secrets/anthropic_api_key'</code><br>"
+            "<code>sudo chmod 600 /etc/doodleme/secrets/anthropic_api_key</code>"
+        )
+        update_note.setWordWrap(True)
+        update_note.setTextFormat(Qt.TextFormat.RichText)
+        update_note.setStyleSheet("color: #9d9d9d; font-size: 11px; line-height: 1.5;")
+        form.addRow(update_note)
 
-        key_row = QHBoxLayout()
-        key_row.addWidget(self._key_edit)
-        self._show_key_btn = QPushButton("Show")
-        self._show_key_btn.setProperty("flat", True)
-        self._show_key_btn.setFixedWidth(52)
-        self._show_key_btn.clicked.connect(self._toggle_key_visibility)
-        key_row.addWidget(self._show_key_btn)
-
+        # Test connection (reads from secrets file — never from a dialog field)
+        test_row = QHBoxLayout()
         self._test_btn = QPushButton("Test connection")
-        self._test_btn.setProperty("secondary", True)
+        self._test_btn.setEnabled(source != "not set")
         self._test_btn.clicked.connect(self._test_api_key)
+        test_row.addWidget(self._test_btn)
+        test_row.addStretch()
         self._test_label = QLabel("")
-        self._test_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self._test_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        test_row.addWidget(self._test_label)
+        form.addRow(test_row)
 
-        form.addRow("Anthropic API Key:", key_row)
-        form.addRow("", self._test_btn)
-        form.addRow("", self._test_label)
         return w
 
     def _build_paths_tab(self) -> QWidget:
@@ -158,21 +172,11 @@ class SettingsDialog(QDialog):
 
     # ── Actions ──────────────────────────────────────────────────────────────
 
-    def _toggle_key_visibility(self) -> None:
-        if self._key_edit.echoMode() == QLineEdit.EchoMode.Password:
-            self._key_edit.setEchoMode(QLineEdit.EchoMode.Normal)
-            self._show_key_btn.setText("Hide")
-        else:
-            self._key_edit.setEchoMode(QLineEdit.EchoMode.Password)
-            self._show_key_btn.setText("Show")
-
     def _test_api_key(self) -> None:
-        key = self._key_edit.text().strip()
+        """Test the key loaded from the secrets file — never from user input."""
+        key = self._settings.api_key()
         if not key:
-            self._test_label.setText("⚠ Enter a key first")
-            self._test_label.setProperty("status-warn", True)
-            self._test_label.style().unpolish(self._test_label)
-            self._test_label.style().polish(self._test_label)
+            self._test_label.setText("⚠ No key available")
             return
 
         self._test_btn.setEnabled(False)
@@ -184,11 +188,12 @@ class SettingsDialog(QDialog):
 
                 client = anthropic.Anthropic(api_key=key)
                 client.models.list()
-                ok = True
-                msg = "✓ Connected"
+                ok, msg = True, "✓ Connected"
             except Exception as exc:  # noqa: BLE001
-                ok = False
-                msg = f"✗ {exc}"
+                ok, msg = False, f"✗ {exc}"
+            finally:
+                # Do not hold a reference to `key` beyond this scope.
+                del key  # type: ignore[name-defined]
 
             from python_qt_binding.QtCore import QMetaObject, Qt
 
@@ -203,10 +208,8 @@ class SettingsDialog(QDialog):
 
     def _on_test_done(self, ok: bool, msg: str) -> None:  # noqa: FBT001
         self._test_label.setText(msg)
-        prop = "status-ok" if ok else "status-err"
-        self._test_label.setProperty(prop, True)
-        self._test_label.style().unpolish(self._test_label)
-        self._test_label.style().polish(self._test_label)
+        colour = "#4ec9b0" if ok else "#f48771"
+        self._test_label.setStyleSheet(f"color: {colour};")
         self._test_btn.setEnabled(True)
 
     def _browse_dir(self, target: QLineEdit, title: str) -> None:
@@ -220,11 +223,7 @@ class SettingsDialog(QDialog):
             target.setText(path)
 
     def _on_accept(self) -> None:
-        key = self._key_edit.text().strip()
-        if key != self._settings.api_key():
-            self._settings.set("api_key", key)
-            self.api_key_changed.emit(key)
-
+        # api_key is intentionally excluded — it must not pass through here.
         self._settings.set("workspace", self._workspace_edit.text().strip())
         self._settings.set("openscad_path", self._openscad_edit.text().strip())
         self._settings.set("auto_render", self._auto_render_cb.isChecked())
