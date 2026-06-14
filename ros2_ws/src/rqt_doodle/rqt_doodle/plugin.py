@@ -40,7 +40,7 @@ class _AgentWorker(QObject):
     token = Signal(str)
     tool_called = Signal(str, dict)
     tool_done = Signal(str, object)
-    finished = Signal()
+    finished = Signal(str)   # carries usage summary string
     error = Signal(str)
     stl_ready = Signal(str)   # path to newly rendered STL
     urdf_ready = Signal(str)  # path to updated URDF
@@ -67,15 +67,19 @@ class _AgentWorker(QObject):
     def send(self, message: str) -> None:
         if self._agent is None:
             self.error.emit("Agent not initialised. Set your API key in Settings.")
-            self.finished.emit()
+            self.finished.emit("")
             return
+
+        def _on_done() -> None:
+            summary = str(self._agent.usage) if self._agent else ""
+            self.finished.emit(summary)
 
         self._agent.send(
             user_message=message,
             on_token=self.token.emit,
             on_tool_call=lambda name, inputs: self.tool_called.emit(name, inputs),
             on_tool_result=self._on_tool_result,
-            on_done=self.finished.emit,
+            on_done=_on_done,
             on_error=self.error.emit,
         )
 
@@ -219,7 +223,7 @@ class DoodlePlugin(Plugin):
 
         self._worker.token.connect(self._chat.stream_token)
         self._worker.tool_called.connect(self._on_tool_called)
-        self._worker.finished.connect(self._on_agent_done)
+        self._worker.finished.connect(self._on_agent_done)  # type: ignore[arg-type]
         self._worker.error.connect(self._on_agent_error)
         self._worker.stl_ready.connect(self._viewer.load_stl)
         self._worker.bom_ready.connect(self._bom.set_bom)
@@ -240,10 +244,18 @@ class DoodlePlugin(Plugin):
     def _on_tool_called(self, name: str, inputs: dict[str, Any]) -> None:
         self._chat.add_tool_call(name, inputs)
 
-    def _on_agent_done(self) -> None:
+    def _on_agent_done(self, usage_summary: str) -> None:
         self._chat.end_assistant_message()
         self._chat.set_input_enabled(True)
-        self._status_bar.show_message("Ready", 2000)
+        if usage_summary:
+            # Show cost estimate briefly, then revert to "Ready"
+            parts = usage_summary.split()
+            cost = next((p for p in parts if p.startswith("est=$")), "")
+            hit  = next((p for p in parts if p.startswith("hit=")), "")
+            label = f"Ready  |  {hit}  {cost}" if hit else "Ready"
+            self._status_bar.show_message(label, 5000)
+        else:
+            self._status_bar.show_message("Ready", 2000)
 
     def _on_agent_error(self, msg: str) -> None:
         self._chat.end_assistant_message()
