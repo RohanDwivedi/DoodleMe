@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
@@ -11,6 +12,57 @@ import anthropic
 from .prompts.system_prompt import SYSTEM_PROMPT
 from .session.session_manager import SessionManager
 from .tools import TOOL_REGISTRY, TOOL_SCHEMAS
+
+# ── Prompt-cache structures (built once, reused every call) ───────────────────
+# Marking the system prompt and the last tool definition with cache_control
+# means both blocks are cached server-side after the first call (5-min TTL).
+# Cache reads cost $0.30/M vs $3.00/M for regular input — 10× cheaper.
+
+_SYSTEM_CACHED: list[dict[str, Any]] = [
+    {
+        "type": "text",
+        "text": SYSTEM_PROMPT,
+        "cache_control": {"type": "ephemeral"},
+    }
+]
+
+_TOOLS_CACHED: list[dict[str, Any]] = [
+    *TOOL_SCHEMAS[:-1],
+    {**TOOL_SCHEMAS[-1], "cache_control": {"type": "ephemeral"}},
+]
+
+
+@dataclass
+class UsageStats:
+    """Cumulative token usage for the current agent session."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cache_write_tokens: int = 0
+    cache_read_tokens: int = 0
+
+    @property
+    def cost_usd(self) -> float:
+        """Estimated cost in USD at Sonnet 4 list prices."""
+        billable_input = self.input_tokens - self.cache_read_tokens
+        return (
+            billable_input        * 3.00 / 1_000_000
+            + self.cache_write_tokens * 3.75 / 1_000_000
+            + self.cache_read_tokens  * 0.30 / 1_000_000
+            + self.output_tokens      * 15.00 / 1_000_000
+        )
+
+    @property
+    def cache_hit_rate(self) -> float:
+        total_in = self.input_tokens + self.cache_read_tokens
+        return self.cache_read_tokens / total_in if total_in else 0.0
+
+    def __str__(self) -> str:
+        return (
+            f"in={self.input_tokens:,} out={self.output_tokens:,} "
+            f"cache_write={self.cache_write_tokens:,} cache_read={self.cache_read_tokens:,} "
+            f"hit={self.cache_hit_rate:.0%} est=${self.cost_usd:.4f}"
+        )
 
 
 class DoodleAgent:
@@ -38,6 +90,7 @@ class DoodleAgent:
         self._openscad_binary = openscad_binary
         self._history: list[dict[str, Any]] = session_manager.load_history()
         self._lock = threading.Lock()
+        self.usage = UsageStats()
 
     # ── Public API ──────────────────────────────────────────────────────────
 
@@ -61,6 +114,7 @@ class DoodleAgent:
         with self._lock:
             self._history = []
             self._session.save_history([])
+            self.usage = UsageStats()
 
     def message_count(self) -> int:
         return len(self._history)
@@ -106,13 +160,19 @@ class DoodleAgent:
             with self._client.messages.stream(
                 model=self.MODEL,
                 max_tokens=self.MAX_TOKENS,
-                system=SYSTEM_PROMPT,
-                tools=TOOL_SCHEMAS,
+                system=_SYSTEM_CACHED,
+                tools=_TOOLS_CACHED,
                 messages=self._history,
             ) as stream:
                 for text in stream.text_stream:
                     on_token(text)
                 message = stream.get_final_message()
+
+            u = message.usage
+            self.usage.input_tokens       += u.input_tokens
+            self.usage.output_tokens      += u.output_tokens
+            self.usage.cache_write_tokens += getattr(u, "cache_creation_input_tokens", 0)
+            self.usage.cache_read_tokens  += getattr(u, "cache_read_input_tokens", 0)
 
             # Append assistant turn (convert SDK objects → dicts for serialisation)
             assistant_content: list[dict[str, Any]] = []
