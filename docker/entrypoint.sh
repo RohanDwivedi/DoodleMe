@@ -18,11 +18,13 @@ if [ -z "${DISPLAY:-}" ]; then
     trap "kill $XVFB_PID 2>/dev/null || true" EXIT
 fi
 
-# ── API key check (informational only — can also be set in Settings dialog) ───
-if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-    echo "[doodle] ANTHROPIC_API_KEY not set."
-    echo "[doodle] You can enter it in the Settings dialog on first launch,"
-    echo "[doodle] or pass it via the .env file / environment variable."
+# ── Secret availability check (informational only) ────────────────────────────
+if [ -f /run/secrets/anthropic_api_key ]; then
+    echo "[doodle] API key loaded from Docker secret."
+elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+    echo "[doodle] API key loaded from environment variable."
+else
+    echo "[doodle] No API key found. Enter it via Settings → API on first launch."
 fi
 
 # ── Workspace directory ───────────────────────────────────────────────────────
