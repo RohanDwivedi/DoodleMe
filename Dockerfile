@@ -70,9 +70,18 @@ RUN pip3 install --no-cache-dir --break-system-packages \
 WORKDIR /ros2_ws
 COPY ros2_ws/src ./src
 
-# ── Layer 4: colcon build ─────────────────────────────────────────────────────
-# Two-pass build so generated message Python modules exist before rqt_doodle
-# installs (avoids a race when all four packages build in parallel).
+# ── Layer 4a: pip-install our Python packages ─────────────────────────────────
+# ament_python_install_package() calls pip without --break-system-packages and
+# silently fails on Ubuntu 24.04 (PEP 668). Install directly here instead so
+# `import doodle_agent` and `import rqt_doodle` are guaranteed to work.
+RUN pip3 install --no-cache-dir --break-system-packages \
+    /ros2_ws/src/doodle_agent \
+    /ros2_ws/src/rqt_doodle
+
+# ── Layer 4b: colcon build ────────────────────────────────────────────────────
+# doodle_msgs  — rosidl message generation (must go first)
+# doodle_description — launch files + ament_index entry
+# rqt_doodle   — ament_index registration + plugin.xml + assets (Python already installed above)
 RUN /bin/bash -c "\
     source /opt/ros/jazzy/setup.bash && \
     colcon build \
@@ -81,7 +90,7 @@ RUN /bin/bash -c "\
     source /ros2_ws/install/setup.bash && \
     colcon build \
         --symlink-install \
-        --packages-select doodle_agent rqt_doodle \
+        --packages-select rqt_doodle \
     "
 
 # ── Runtime environment ───────────────────────────────────────────────────────

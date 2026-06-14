@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.8)
 project(doodle_agent)
 
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
 
-# Install the Python package into the ament install tree
-ament_python_install_package(${PROJECT_NAME})
+# Python package is installed via pip in the Dockerfile (Layer 4a).
+# This CMakeLists.txt only registers the package in the ament_index.
 
 ament_package()
