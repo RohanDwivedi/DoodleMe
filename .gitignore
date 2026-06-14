@@ -1,3 +1,9 @@
+# Secrets — NEVER commit key files
+secrets/*.txt
+secrets/*.key
+secrets/*.pem
+secrets/*.json
+
 # Python
 __pycache__/
 *.py[cod]
