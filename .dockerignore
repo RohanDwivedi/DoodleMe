@@ -1,3 +1,6 @@
+# Secrets — NEVER bake into the image
+secrets/
+
 # Version control
 .git/
 .github/
