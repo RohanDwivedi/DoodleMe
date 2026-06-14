@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 # ── Source ROS2 and the built workspace ──────────────────────────────────────
 source /opt/ros/jazzy/setup.bash
